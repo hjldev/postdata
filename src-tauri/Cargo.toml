@@ -1,0 +1,23 @@
+[package]
+name = "postdata"
+version = "0.1.0"
+edition = "2021"
+[lib]
+name = "postdata_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json", "multipart", "stream", "cookies"] }
+reqwest_cookie_store = "0.9"
+cookie_store = "0.22"
+tokio = { version = "1", features = ["fs", "time", "sync", "macros", "io-util"] }
+tokio-util = { version = "0.7", features = ["rt", "io"] }
+[dev-dependencies]
+axum = "0.8"
+tempfile = "3"

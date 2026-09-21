@@ -1,0 +1,10 @@
+{
+  "identifier": "default",
+  "description": "Main desktop window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "clipboard-manager:allow-write-text"
+  ]
+}
