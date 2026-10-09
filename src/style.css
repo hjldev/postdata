@@ -423,9 +423,14 @@ h1 {
 }
 .request-workbench {
   margin: 0 30px;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 335px;
+  min-height: 148px;
+  overflow: hidden;
 }
 .url-bar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   height: 47px;
@@ -481,6 +486,7 @@ h1 {
   background: #94694f;
 }
 .request-tabs {
+  flex-shrink: 0;
   display: flex;
   height: 53px;
   align-items: stretch;
@@ -523,7 +529,8 @@ h1 {
   color: #acb4be;
 }
 .request-panel {
-  height: 235px;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
 }
 .section-description {
@@ -720,68 +727,63 @@ h1 {
   color: #67866c;
   border: 1px solid #dfebe2;
 }
+.response-resizer {
+  height: 11px;
+  flex-shrink: 0;
+  position: relative;
+  cursor: row-resize;
+  touch-action: none;
+  border-bottom: 1px solid #e8edf1;
+}
+.response-resizer::after {
+  content: "";
+  position: absolute;
+  width: 34px;
+  height: 3px;
+  top: 4px;
+  left: calc(50% - 17px);
+  border-radius: 2px;
+  background: #d5dfda;
+}
+.response-resizer:hover,
+.response-resizer.active,
+.response-resizer:focus-visible {
+  background: #eff6f2;
+}
+.response-resizer:focus-visible {
+  outline: 2px solid #5b9e84;
+  outline-offset: -2px;
+}
+.response-resizer:hover::after,
+.response-resizer.active::after {
+  background: #5b9e84;
+}
+.resizing-response,
+.resizing-response * {
+  cursor: row-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
 .response-section {
-  border-top: 1px solid #e8edf1;
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 0 160px;
   min-height: 160px;
-  margin-top: 10px;
-}
-.response-heading {
-  height: 49px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 30px;
-  border-bottom: 1px solid #edf0f3;
-}
-.response-heading > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #8594a3;
-}
-.response-heading strong {
-  font-size: 12px;
-  font-weight: 600;
-  color: #5b6b7c;
-}
-.response-label {
-  font-size: 8px;
-  color: #b1b9c2;
-  letter-spacing: 1px;
-  margin-left: 3px;
-}
-.waiting-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  color: #a5adb8;
-}
-.waiting-status i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #c4ccd3;
-}
-.waiting-status i.working {
-  background: #2e8968;
-  animation: pulse 1s infinite;
+  overflow: hidden;
 }
 .response-empty {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 200px;
+  justify-content: safe center;
+  min-height: 0;
+  overflow: auto;
   padding: 16px 0 24px;
   background: radial-gradient(ellipse at center, #fafcfb 0, white 68%);
 }
 .empty-illustration {
+  flex-shrink: 0;
   position: relative;
   width: 142px;
   height: 112px;
@@ -898,7 +900,10 @@ kbd {
 .response-metrics {
   display: flex;
   align-items: center;
-  gap: 17px;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
   color: #9aa5b0;
   font-size: 10px;
 }
@@ -927,12 +932,14 @@ kbd {
   height: 41px;
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 16px;
   padding: 0 30px;
   border-bottom: 1px solid #eef1f3;
   flex-shrink: 0;
 }
 .response-toolbar > button {
+  flex-shrink: 0;
+  white-space: nowrap;
   height: 100%;
   font-size: 11px;
   color: #929eab;
@@ -949,10 +956,14 @@ kbd {
   padding: 1px 4px;
 }
 .response-tools {
-  margin-left: auto;
   display: flex;
+  margin-left: auto;
+  flex-shrink: 0;
   align-items: center;
   gap: 3px;
+}
+.response-tools + .response-metrics {
+  margin-left: 0;
 }
 .response-tools > button {
   font-size: 10px;
@@ -983,7 +994,15 @@ kbd {
   min-height: 0;
   overflow: hidden;
 }
+.response-section > .small-empty {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  justify-content: safe center;
+}
 .response-headers {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   font-size: 11px;
   padding: 5px 30px;
@@ -1164,8 +1183,8 @@ kbd {
     padding-top: 20px;
     padding-bottom: 17px;
   }
-  .request-panel {
-    height: 207px;
+  .request-workbench {
+    flex-basis: 307px;
   }
   .response-empty {
     padding: 10px 0;

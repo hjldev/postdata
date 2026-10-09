@@ -17,7 +17,6 @@ import {
   Clock3,
   Globe2,
   Braces,
-  ArrowDown,
   Save,
   Command,
   FolderOpen,
@@ -46,6 +45,63 @@ const curlOpen = ref(false),
   curlError = ref(""),
   curlCopied = ref(false),
   curlLoading = ref(false);
+const requestWorkbench = ref<HTMLElement>(),
+  responseSection = ref<HTMLElement>(),
+  requestHeight = ref<number>(),
+  resizingResponse = ref(false),
+  paneHeights = ref({ request: 335, response: 160 });
+const minRequestHeight = 148,
+  minResponseHeight = 160;
+const totalPaneHeight = computed(
+  () => paneHeights.value.request + paneHeights.value.response,
+);
+let paneObserver: ResizeObserver | undefined;
+let resizeStart: { pointerId: number; y: number; height: number } | undefined;
+function setRequestHeight(height: number) {
+  requestHeight.value = Math.round(
+    Math.max(
+      minRequestHeight,
+      Math.min(height, totalPaneHeight.value - minResponseHeight),
+    ),
+  );
+}
+function startResponseResize(event: PointerEvent) {
+  if (event.button !== 0 || resizeStart) return;
+  event.preventDefault();
+  const handle = event.currentTarget as HTMLElement;
+  handle.focus();
+  handle.setPointerCapture(event.pointerId);
+  resizeStart = {
+    pointerId: event.pointerId,
+    y: event.clientY,
+    height: paneHeights.value.request,
+  };
+  resizingResponse.value = true;
+}
+function resizeResponse(event: PointerEvent) {
+  if (!resizeStart || event.pointerId !== resizeStart.pointerId) return;
+  setRequestHeight(resizeStart.height + event.clientY - resizeStart.y);
+}
+function stopResponseResize(event: PointerEvent) {
+  if (!resizeStart || event.pointerId !== resizeStart.pointerId) return;
+  resizeStart = undefined;
+  resizingResponse.value = false;
+  const handle = event.currentTarget as HTMLElement;
+  if (handle.hasPointerCapture(event.pointerId))
+    handle.releasePointerCapture(event.pointerId);
+}
+function resizeResponseByKey(event: KeyboardEvent) {
+  const step = event.shiftKey ? 60 : 20;
+  let height = paneHeights.value.request;
+  if (event.key === "ArrowUp") height -= step;
+  else if (event.key === "ArrowDown") height += step;
+  else if (event.key === "Home") height = minRequestHeight;
+  else if (event.key === "End")
+    height = totalPaneHeight.value - minResponseHeight;
+  else return;
+  event.preventDefault();
+  setRequestHeight(height);
+}
 async function showCurl() {
   curlOpen.value = true;
   curlLoading.value = true;
@@ -218,8 +274,19 @@ function shortcut(event: KeyboardEvent) {
 onMounted(() => {
   store.init();
   window.addEventListener("keydown", shortcut);
+  paneObserver = new ResizeObserver(() => {
+    paneHeights.value = {
+      request: requestWorkbench.value?.getBoundingClientRect().height || 0,
+      response: responseSection.value?.getBoundingClientRect().height || 0,
+    };
+  });
+  if (requestWorkbench.value) paneObserver.observe(requestWorkbench.value);
+  if (responseSection.value) paneObserver.observe(responseSection.value);
 });
-onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", shortcut);
+  paneObserver?.disconnect();
+});
 </script>
 <template>
   <div class="app-shell">
@@ -331,7 +398,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
         >
       </div>
     </aside>
-    <main class="main-area">
+    <main class="main-area" :class="{ 'resizing-response': resizingResponse }">
       <div class="request-titlebar">
         <div>
           <h1>
@@ -358,15 +425,22 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
             <Star :size="15" /> {{ store.favoriteId ? "保存更改" : "保存请求" }}
           </button>
           <button
-              class="quiet-button"
-              :disabled="store.busy"
-              @click="showCookies"
+            class="quiet-button"
+            :disabled="store.busy"
+            @click="showCookies"
           >
             <Cookie :size="15" /> Cookie 管理
           </button>
         </div>
       </div>
-      <section class="request-workbench">
+      <section
+        ref="requestWorkbench"
+        class="request-workbench"
+        :style="{
+          flexBasis:
+            requestHeight === undefined ? undefined : `${requestHeight}px`,
+        }"
+      >
         <form class="url-bar" @submit.prevent="store.send">
           <select
             v-model="store.request.method"
@@ -556,28 +630,32 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
           <X :size="14" />
         </button>
       </div>
-      <section class="response-section">
-        <div class="response-heading">
-          <div>
-            <ArrowDown :size="15" /><strong>响应</strong
-            ><span v-if="!store.response" class="response-label">RESPONSE</span>
-          </div>
-          <div v-if="store.response" class="response-metrics">
-            <span
-              class="status-pill"
-              :class="{ 'status-error': store.response.status >= 400 }"
-              ><i></i>{{ store.response.status }}</span
-            ><span><Clock3 :size="12" /> {{ store.response.elapsedMs }} ms</span
-            ><span
-              >{{ size(store.response.size)
-              }}{{ store.response.truncated ? "+" : "" }}</span
-            >
-          </div>
-          <span v-else class="waiting-status"
-            ><i :class="{ working: store.busy }"></i
-            >{{ store.busy ? "请求进行中" : "等待发送" }}</span
-          >
-        </div>
+      <div
+        class="response-resizer"
+        :class="{ active: resizingResponse }"
+        role="separator"
+        tabindex="0"
+        aria-label="调整响应区域高度"
+        aria-orientation="horizontal"
+        aria-controls="response-panel"
+        :aria-valuemin="minResponseHeight"
+        :aria-valuemax="Math.round(totalPaneHeight - minRequestHeight)"
+        :aria-valuenow="Math.round(paneHeights.response)"
+        :aria-valuetext="`响应区域高度 ${Math.round(paneHeights.response)} 像素`"
+        title="上下拖动调整响应高度，双击恢复默认"
+        @pointerdown="startResponseResize"
+        @pointermove="resizeResponse"
+        @pointerup="stopResponseResize"
+        @pointercancel="stopResponseResize"
+        @lostpointercapture="stopResponseResize"
+        @keydown="resizeResponseByKey"
+        @dblclick="requestHeight = undefined"
+      ></div>
+      <section
+        id="response-panel"
+        ref="responseSection"
+        class="response-section"
+      >
         <template v-if="store.response"
           ><div class="response-toolbar">
             <button
@@ -607,12 +685,22 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
                 <Check v-if="copied" :size="14" /><Copy v-else :size="14" />
               </button>
             </div>
+            <div class="response-metrics">
+              <span
+                class="status-pill"
+                :class="{ 'status-error': store.response.status >= 400 }"
+                title="响应状态"
+                ><i></i>{{ store.response.status }}</span
+              ><span title="响应用时"
+                ><Clock3 :size="12" /> {{ store.response.elapsedMs }} ms</span
+              ><span title="响应大小"
+                >{{ size(store.response.size)
+                }}{{ store.response.truncated ? "+" : "" }}</span
+              >
+            </div>
           </div>
           <div v-if="store.response.truncated" class="limit-notice">
             响应超过 10 MiB，已停止读取；当前仅显示已读取的部分内容。
-          </div>
-          <div class="final-url" :title="store.response.finalUrl">
-            {{ store.response.finalUrl }}
           </div>
           <div v-if="responseTab === 'headers'" class="response-headers">
             <div v-for="([key, value], i) in store.response.headers" :key="i">
@@ -661,15 +749,6 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
           </div>
         </div>
       </section>
-      <footer class="statusbar">
-        <span
-          ><i></i
-          >{{ store.desktop ? "本地请求引擎就绪" : "浏览器界面预览" }}</span
-        ><span
-          >HTTP / HTTPS <span class="statusbar-divider">|</span> Postdata ·
-          简单，专注，高效</span
-        >
-      </footer>
     </main>
     <div v-if="curlOpen" class="modal-backdrop" @click.self="curlOpen = false">
       <div
