@@ -224,13 +224,6 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
 <template>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">
-          <ArrowUpRight :size="24" :stroke-width="2.4" />
-        </div>
-        <strong>postdata<span>.</span></strong
-        ><span class="version">BETA</span>
-      </div>
       <button
         class="new-request"
         :disabled="store.busy"
@@ -337,29 +330,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
           </div></template
         >
       </div>
-      <div class="sidebar-bottom">
-        <div class="local-status">
-          <span></span> 数据仅保存在本机 <Globe2 :size="13" />
-        </div>
-        <div class="sidebar-footer">
-          <span>Postdata v0.1.0</span><span>为专注调试而生</span>
-        </div>
-      </div>
     </aside>
     <main class="main-area">
-      <header class="topbar">
-        <div class="breadcrumb"><span>请求工作台</span></div>
-        <button
-          class="quiet-button"
-          :disabled="store.busy"
-          @click="showCookies"
-        >
-          <Cookie :size="15" /> Cookie 管理
-        </button>
-      </header>
       <div class="request-titlebar">
         <div>
-          <div class="eyebrow">HTTP REQUEST</div>
           <h1>
             {{ store.request.name || "未命名请求"
             }}<span
@@ -382,6 +356,13 @@ onBeforeUnmount(() => window.removeEventListener("keydown", shortcut));
             @click="openSave"
           >
             <Star :size="15" /> {{ store.favoriteId ? "保存更改" : "保存请求" }}
+          </button>
+          <button
+              class="quiet-button"
+              :disabled="store.busy"
+              @click="showCookies"
+          >
+            <Cookie :size="15" /> Cookie 管理
           </button>
         </div>
       </div>
