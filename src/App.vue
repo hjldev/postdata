@@ -55,8 +55,64 @@ const minRequestHeight = 148,
 const totalPaneHeight = computed(
   () => paneHeights.value.request + paneHeights.value.response,
 );
+const sidebarPanel = ref<HTMLElement>(),
+  mainArea = ref<HTMLElement>(),
+  sidebarWidth = ref<number>(),
+  resizingMain = ref(false),
+  paneWidths = ref({ sidebar: 246, main: 640 });
+const minSidebarWidth = 180,
+  minMainWidth = 640;
+const totalPaneWidth = computed(
+  () => paneWidths.value.sidebar + paneWidths.value.main,
+);
 let paneObserver: ResizeObserver | undefined;
 let resizeStart: { pointerId: number; y: number; height: number } | undefined;
+let mainResizeStart:
+  { pointerId: number; x: number; width: number } | undefined;
+function setSidebarWidth(width: number) {
+  sidebarWidth.value = Math.round(
+    Math.max(
+      minSidebarWidth,
+      Math.min(width, totalPaneWidth.value - minMainWidth),
+    ),
+  );
+}
+function startMainResize(event: PointerEvent) {
+  if (event.button !== 0 || mainResizeStart || resizeStart) return;
+  event.preventDefault();
+  const handle = event.currentTarget as HTMLElement;
+  handle.focus();
+  handle.setPointerCapture(event.pointerId);
+  mainResizeStart = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    width: paneWidths.value.sidebar,
+  };
+  resizingMain.value = true;
+}
+function resizeMain(event: PointerEvent) {
+  if (!mainResizeStart || event.pointerId !== mainResizeStart.pointerId) return;
+  setSidebarWidth(mainResizeStart.width + event.clientX - mainResizeStart.x);
+}
+function stopMainResize(event: PointerEvent) {
+  if (!mainResizeStart || event.pointerId !== mainResizeStart.pointerId) return;
+  mainResizeStart = undefined;
+  resizingMain.value = false;
+  const handle = event.currentTarget as HTMLElement;
+  if (handle.hasPointerCapture(event.pointerId))
+    handle.releasePointerCapture(event.pointerId);
+}
+function resizeMainByKey(event: KeyboardEvent) {
+  const step = event.shiftKey ? 60 : 20;
+  let width = paneWidths.value.sidebar;
+  if (event.key === "ArrowLeft") width -= step;
+  else if (event.key === "ArrowRight") width += step;
+  else if (event.key === "Home") width = minSidebarWidth;
+  else if (event.key === "End") width = totalPaneWidth.value - minMainWidth;
+  else return;
+  event.preventDefault();
+  setSidebarWidth(width);
+}
 function setRequestHeight(height: number) {
   requestHeight.value = Math.round(
     Math.max(
@@ -66,7 +122,7 @@ function setRequestHeight(height: number) {
   );
 }
 function startResponseResize(event: PointerEvent) {
-  if (event.button !== 0 || resizeStart) return;
+  if (event.button !== 0 || resizeStart || mainResizeStart) return;
   event.preventDefault();
   const handle = event.currentTarget as HTMLElement;
   handle.focus();
@@ -279,9 +335,15 @@ onMounted(() => {
       request: requestWorkbench.value?.getBoundingClientRect().height || 0,
       response: responseSection.value?.getBoundingClientRect().height || 0,
     };
+    paneWidths.value = {
+      sidebar: sidebarPanel.value?.getBoundingClientRect().width || 0,
+      main: mainArea.value?.getBoundingClientRect().width || 0,
+    };
   });
   if (requestWorkbench.value) paneObserver.observe(requestWorkbench.value);
   if (responseSection.value) paneObserver.observe(responseSection.value);
+  if (sidebarPanel.value) paneObserver.observe(sidebarPanel.value);
+  if (mainArea.value) paneObserver.observe(mainArea.value);
 });
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", shortcut);
@@ -289,8 +351,14 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
-  <div class="app-shell">
-    <aside class="sidebar">
+  <div class="app-shell" :class="{ 'resizing-main': resizingMain }">
+    <aside
+      ref="sidebarPanel"
+      class="sidebar"
+      :style="{
+        width: sidebarWidth === undefined ? undefined : `${sidebarWidth}px`,
+      }"
+    >
       <button
         class="new-request"
         :disabled="store.busy"
@@ -398,7 +466,33 @@ onBeforeUnmount(() => {
         >
       </div>
     </aside>
-    <main class="main-area" :class="{ 'resizing-response': resizingResponse }">
+    <div
+      class="main-resizer"
+      :class="{ active: resizingMain }"
+      role="separator"
+      tabindex="0"
+      aria-label="调整主区域宽度"
+      aria-orientation="vertical"
+      aria-controls="main-area"
+      :aria-valuemin="minMainWidth"
+      :aria-valuemax="Math.round(totalPaneWidth - minSidebarWidth)"
+      :aria-valuenow="Math.round(paneWidths.main)"
+      :aria-valuetext="`主区域宽度 ${Math.round(paneWidths.main)} 像素`"
+      title="左右拖动调整主区域宽度，双击恢复默认"
+      @pointerdown="startMainResize"
+      @pointermove="resizeMain"
+      @pointerup="stopMainResize"
+      @pointercancel="stopMainResize"
+      @lostpointercapture="stopMainResize"
+      @keydown="resizeMainByKey"
+      @dblclick="sidebarWidth = undefined"
+    ></div>
+    <main
+      id="main-area"
+      ref="mainArea"
+      class="main-area"
+      :class="{ 'resizing-response': resizingResponse }"
+    >
       <div class="request-titlebar">
         <div>
           <h1>

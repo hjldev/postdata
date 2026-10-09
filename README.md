@@ -17,6 +17,7 @@ npm run tauri dev
 
 - 点击“生成 cURL”可预览并复制当前请求，在 macOS/Linux 的 bash 或 zsh 中执行；无需先发送请求。包含启用的请求头、鉴权、匹配当前 URL 的 Cookie 及请求体。导出命令只保留请求构造参数；代理、重定向、超时和本机配置使用 cURL 默认行为，不继承应用设置。上传命令引用本机文件路径。Cookie 是导出时的快照；跨域重定向和会话更新可能与应用内行为不同。命令不兼容 PowerShell/CMD 的转义规则。
 - 选择 HTTP 方法，填写完整 `http://` 或 `https://` URL，点击发送或按 `⌘Enter`（Windows/Linux 为 `Ctrl+Enter`）。
+- 拖动左侧栏与主区域之间的竖向分隔线可调整主区域宽度，双击恢复默认；聚焦分隔线后也可用左右方向键调整。
 - Query 参数与 URL 双向同步，支持重复键、空值、启停及删除。手动编辑 URL 会重新生成参数表。
 - 请求体支持 JSON、文本、URL 编码表单、multipart 文本和文件上传。文件由 Rust 流式读取，不经过前端编码。
 - Bearer / Basic 配置覆盖手动 Authorization；multipart 自动生成 Content-Type / boundary。

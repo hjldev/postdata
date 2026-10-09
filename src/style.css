@@ -74,12 +74,50 @@ svg {
 }
 .sidebar {
   width: 246px;
-  flex-shrink: 0;
+  min-width: 180px;
+  flex-shrink: 1;
   background: #f8f9fb;
-  border-right: 1px solid #e8ecf0;
   display: flex;
   flex-direction: column;
   padding: 0 16px;
+}
+.main-resizer {
+  width: 7px;
+  flex-shrink: 0;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  background: #f8f9fb;
+  border-right: 1px solid #e8ecf0;
+}
+.main-resizer::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 34px;
+  top: calc(50% - 17px);
+  left: 2px;
+  border-radius: 2px;
+  background: #d5dfda;
+}
+.main-resizer:hover,
+.main-resizer.active,
+.main-resizer:focus-visible {
+  background: #eff6f2;
+}
+.main-resizer:focus-visible {
+  outline: 2px solid #5b9e84;
+  outline-offset: -2px;
+}
+.main-resizer:hover::after,
+.main-resizer.active::after {
+  background: #5b9e84;
+}
+.resizing-main,
+.resizing-main * {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 .brand {
   height: 83px;
@@ -349,7 +387,7 @@ svg {
 }
 .main-area {
   flex: 1;
-  min-width: 0;
+  min-width: 640px;
   display: flex;
   flex-direction: column;
 }
